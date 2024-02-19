@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
 	<key>API_KEY</key>
-	<string>AIzaSyAhHxjzmolniC1jOnHyE6j2ayXjjZsF1cA</string>
+	<string>AIzaSyBsj_ek55oNIIdsP-BrkHinLmBWfp54wwI</string>
 	<key>GCM_SENDER_ID</key>
-	<string>315567614418</string>
+	<string>960089174717</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>UMKC.Advotech-Keyboard</string>
+	<string>UMKC.Keyboard-Advotech</string>
 	<key>PROJECT_ID</key>
-	<string>advotech-keyboard-7f5fe</string>
+	<string>keyboard-advotech</string>
 	<key>STORAGE_BUCKET</key>
-	<string>advotech-keyboard-7f5fe.appspot.com</string>
+	<string>keyboard-advotech.appspot.com</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:315567614418:ios:5605dbd986936f1cde400b</string>
+	<string>1:960089174717:ios:bc1f828c06ac79ad0ffdd4</string>
 </dict>
 </plist>

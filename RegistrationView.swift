@@ -1,5 +1,5 @@
 //
-//  RegistrationView.swift
+//  AccountView.swift
 //  Advotech Keyboard
 //
 //  Created by Alhammadi, Abdulrahman (UMKC-Student) on 2/14/24.
@@ -7,7 +7,9 @@
 
 import SwiftUI
 import Firebase
-import FirebaseCore
+import FirebaseCore // Used for Firebase initialization
+import FirebaseAuth // Used for user authentication
+import FirebaseFirestore
 
 struct RegistrationView: View {
     @State private var email = ""
@@ -35,18 +37,20 @@ struct RegistrationView: View {
             TextField("Email", text: $email)
                 .padding()
 
-            CustomSecureField(placeholder: "Password", text: $password)
+            SecureField("Password", text: $password)
                 .padding()
+                .accessibilityIdentifier("passwordField")
 
-            CustomSecureField(placeholder: "Confirm Password", text: $confirmPassword)
+            SecureField("Confirm Password", text: $confirmPassword)
                 .padding()
+                .accessibilityIdentifier("confirmPasswordField")
 
             TextField("Name", text: $name)
                 .padding()
             
             TextField("Phone Number", text: $phoneNumber)
                 .padding()
-                .keyboardType(.phonePad) // To show numeric keypad
+                .keyboardType(.phonePad) // Enforce phone number keyboard
 
             Picker("User Type", selection: $selectedUserType) {
                 ForEach(UserType.allCases) { type in
@@ -98,25 +102,30 @@ struct RegistrationView: View {
     }
 
     func createFirestoreUser() {
-        guard let uid = Auth.auth().currentUser?.uid else { return }
+        guard let uid = Auth.auth().currentUser?.uid else {
+            errorMessage = "Could not retrieve user ID. Please try again."
+            showError = true
+            return
+        }
+
         let userData = [
             "userID": uid,
             "name": name,
             "email": email,
             "userType": selectedUserType.rawValue,
-            "caretakerID": caretakerID, // If provided
+            "caretakerID": caretakerID,
             "phoneNumber": phoneNumber
         ]
 
         Firestore.firestore().collection("users").document(uid).setData(userData) { error in
             if let error = error {
-                errorMessage = "Failed to save user data: \(error)"
+                errorMessage = "Failed to save user data: \(error.localizedDescription)"
                 showError = true
             } else {
-                // Registration successful 
+                // Successful Firestore Save
+                print("User data saved successfully!") // Adjust the logging if needed
             }
         }
     }
+
 }
-
-
