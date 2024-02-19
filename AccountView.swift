@@ -8,12 +8,14 @@
 import Foundation
 import SwiftUI
 import Firebase
+import FirebaseCore
 
 struct AccountView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var confirmPassword = ""
     @State private var name = ""
+    @State private var phoneNumber = ""
     @State private var selectedUserType = UserType.user  // Default
     @State private var caretakerID = ""  // For users only
     @State private var showLoading = false
@@ -34,14 +36,18 @@ struct AccountView: View {
             TextField("Email", text: $email)
                 .padding()
 
-            SecureField("Password", text: $password)
+            CustomSecureField(placeholder: "Password", text: $password)
                 .padding()
 
-            SecureField("Confirm Password", text: $confirmPassword)
+            CustomSecureField(placeholder: "Confirm Password", text: $confirmPassword)
                 .padding()
-
+            
             TextField("Name", text: $name)
                 .padding()
+
+            TextField("Phone Number", text: $phoneNumber)
+                .padding()
+                .keyboardType(.phonePad)
 
             Picker("User Type", selection: $selectedUserType) {
                 ForEach(UserType.allCases) { type in
@@ -66,9 +72,9 @@ struct AccountView: View {
                 ProgressView()
             }
 
-            if showError {
+            /*if showError {
                 Text("Error: \(errorMessage)")
-            }
+            }*/
         }
         .padding()
     }
@@ -98,6 +104,7 @@ struct AccountView: View {
             "userID": uid,
             "name": name,
             "email": email,
+            "phoneNumber": phoneNumber,
             "userType": selectedUserType.rawValue,
             "caretakerID": caretakerID // If provided
         ]
@@ -107,7 +114,7 @@ struct AccountView: View {
                 errorMessage = "Failed to save user data: \(error)"
                 showError = true
             } else {
-                // Registration successful (handle it as you like)
+                // Registration successful
             }
         }
     }

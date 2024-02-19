@@ -7,12 +7,14 @@
 
 import SwiftUI
 import Firebase
+import FirebaseCore
 
 struct RegistrationView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var confirmPassword = ""
     @State private var name = ""
+    @State private var phoneNumber = ""
     @State private var selectedUserType = UserType.user  // Default
     @State private var caretakerID = ""  // For users only
     @State private var showLoading = false
@@ -33,16 +35,18 @@ struct RegistrationView: View {
             TextField("Email", text: $email)
                 .padding()
 
-            SecureField("Password", text: $password)
+            CustomSecureField(placeholder: "Password", text: $password)
                 .padding()
-                .accessibilityIdentifier("passwordField")
 
-            SecureField("Confirm Password", text: $confirmPassword)
+            CustomSecureField(placeholder: "Confirm Password", text: $confirmPassword)
                 .padding()
-                .accessibilityIdentifier("confirmPasswordField")
 
             TextField("Name", text: $name)
                 .padding()
+            
+            TextField("Phone Number", text: $phoneNumber)
+                .padding()
+                .keyboardType(.phonePad) // To show numeric keypad
 
             Picker("User Type", selection: $selectedUserType) {
                 ForEach(UserType.allCases) { type in
@@ -67,9 +71,9 @@ struct RegistrationView: View {
                 ProgressView()
             }
 
-            if showError {
+            /*if showError {
                 Text("Error: \(errorMessage)")
-            }
+            }*/
         }
         .padding()
     }
@@ -100,7 +104,8 @@ struct RegistrationView: View {
             "name": name,
             "email": email,
             "userType": selectedUserType.rawValue,
-            "caretakerID": caretakerID // If provided
+            "caretakerID": caretakerID, // If provided
+            "phoneNumber": phoneNumber
         ]
 
         Firestore.firestore().collection("users").document(uid).setData(userData) { error in
@@ -108,8 +113,10 @@ struct RegistrationView: View {
                 errorMessage = "Failed to save user data: \(error)"
                 showError = true
             } else {
-                // Registration successful (handle it as you like)
+                // Registration successful 
             }
         }
     }
 }
+
+

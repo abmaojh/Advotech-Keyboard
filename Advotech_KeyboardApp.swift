@@ -7,6 +7,7 @@
 
 import SwiftUI
 import FirebaseCore
+import Firebase
 
 @main
 struct Advotech_KeyboardApp: App {
