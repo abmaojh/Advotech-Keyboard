@@ -1,0 +1,9 @@
+Go to File > Add Packages
+Then search for Firebase. Add it. I selected all the optional files (we don’t actually need them all but I’m not sure yet what we need and what we will need so I just added everything)
+Once they’re all downloaded, build project and run. 
+
+Got to File > New > Target and add a keybaord. 
+replace KeybaordViewController and Info.plist with the code from Github. 
+
+Click on the main project > General > Frameworks and Libraries> add everything.
+then go to Signing and Cpabalities and clikc + Capability and add an app group for both the main project and the keyboard
