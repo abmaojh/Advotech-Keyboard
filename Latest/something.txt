@@ -7,3 +7,18 @@ replace KeybaordViewController and Info.plist with the code from Github.
 
 Click on the main project > General > Frameworks and Libraries> add everything.
 then go to Signing and Cpabalities and clikc + Capability and add an app group for both the main project and the keyboard
+
+
+
+
+Can now trigger notification in from user’s account to caretaker. This is done through LoginView for now (just to test if the caretaker is connected to the correct users in the database.)
+
+Need to have Firebase push notifications as well.
+
+Need to try app group connected to apple so that login state is shared between main app and keyboard.
+
+Keyboard can now detect possible SSN or credit card number (but even this probably needs some more possibilities added). Need to add more possible sensitive information types.
+
+The keyboard itself will have the logic to detect sensitive information. Need to see if keyboard will be able to send notification to firebase itself or if we have to go back to main app before notification is sent.
+
+(Also should probably split up login page code into more than 1 file. Maybe login leads to UserView or CaretakerView, or only to user view then UserView will be different depending on if you are user or caretaker)
