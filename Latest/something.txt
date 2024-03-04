@@ -1,4 +1,4 @@
-Go to File > Add Packages
+to change seucGo to File > Add Packages
 Then search for Firebase. Add it. I selected all the optional files (we don’t actually need them all but I’m not sure yet what we need and what we will need so I just added everything)
 Once they’re all downloaded, build project and run. 
 
@@ -13,7 +13,7 @@ then go to Signing and Cpabalities and clikc + Capability and add an app group f
 
 Can now trigger notification in from user’s account to caretaker. This is done through LoginView for now (just to test if the caretaker is connected to the correct users in the database.)
 
-Need to have Firebase push notifications as well.
+Need to have Firebase push notifications as well. Need to change security settings in firestore
 
 Need to try app group connected to apple so that login state is shared between main app and keyboard.
 
