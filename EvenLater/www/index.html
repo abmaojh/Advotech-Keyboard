@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-messaging.js"></script>
+</head>
+<body>
+  <script>
+      // Your Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyBsj_ek55oNIIdsP-BrkHinLmBWfp54wwI",
+        authDomain: "keyboard-advotech.firebaseapp.com",
+        projectId: "keyboard-advotech",
+        storageBucket: "keyboard-advotech.appspot.com",
+        messagingSenderId: "960089174717",
+        appId: "1:960089174717:ios:bc1f828c06ac79ad0ffdd4"
+      };
+
+      // Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+      const messaging = firebase.messaging();
+
+      // Notification sending logic
+      window.webkit.messageHandlers.sendNotification.postMessage = function(data) {
+        const { message, caretakerID } = data;
+
+        firebase.firestore().collection('fcmTokens').doc(caretakerID).get()
+          .then(doc => {
+            const fcmToken = doc.data().token;
+
+            const notification = {
+              title: 'New User Notification',
+              body: message
+            };
+
+            messaging.send({
+                notification,
+                token: fcmToken
+              })
+              .then(response => console.log("Notification sent successfully:", response))
+              .catch(error => console.error("Error sending notification:", error));
+          })
+          .catch(error => {
+            console.error("Error retrieving FCM token:", error);
+          });
+      };
+  </script>
+</body>
+</html>
