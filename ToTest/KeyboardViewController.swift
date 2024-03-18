@@ -6,12 +6,16 @@ class KeyboardViewController: UIInputViewController {
     var suggestionLabel: UILabel!
     var isLowercase = true
     var wordList: [String]?
+    var isSymbolsKeyboardActive = false
 
     override func updateViewConstraints() {
         super.updateViewConstraints()
         // Add custom view sizing constraints here
     }
-
+    let symbolsKeyboardLayout = ["!@#$%^&*()",
+                                 "+-=_\\|/?",
+                                 "~`[]{}<>",
+                                 ".:;'\"/"]
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -25,6 +29,10 @@ class KeyboardViewController: UIInputViewController {
         suggestionLabel.text = "Type here..."
         suggestionBar.addSubview(suggestionLabel)
 
+        // Add tap gesture to suggestionLabel
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(suggestionTapped))
+        suggestionLabel.isUserInteractionEnabled = true
+        suggestionLabel.addGestureRecognizer(tapGesture)
         // Keyboard name label
         let label = UILabel()
         label.text = "Advotech Keyboard"
@@ -49,7 +57,6 @@ class KeyboardViewController: UIInputViewController {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-
         // Update suggestion bar frame
         suggestionBar.frame = CGRect(x: 0, y: 0, width: view.frame.width, height: 30)
         suggestionLabel.frame = suggestionBar.bounds
@@ -64,7 +71,7 @@ class KeyboardViewController: UIInputViewController {
             }
         }
 
-        let numRows = 5
+        let numRows = 4
         let numKeysPerRow = 10
         let keySpacing: CGFloat = 5
         let keyHeight: CGFloat = 40
@@ -73,11 +80,15 @@ class KeyboardViewController: UIInputViewController {
         let keyWidth = availableWidth / CGFloat(numKeysPerRow)
 
         // Include lowercase letters
-        let keyLetters = ["1234567890", "qwertyuiop", "asdfghjkl", "zxcvbnm", ""]
-
+        let keyLetters = isSymbolsKeyboardActive ? symbolsKeyboardLayout : ["qwertyuiop", "asdfghjkl", "zxcvbnm", ""]
         for rowIndex in 0..<numRows {
             let rowLetters = keyLetters[rowIndex]
             let startY = startYOffset + keyHeight * CGFloat(rowIndex) + keySpacing * CGFloat(rowIndex + 1) + suggestionBar.frame.maxY
+            // Calculate total width of letters in the row
+            let totalLetterWidth = CGFloat(rowLetters.count) * keyWidth + CGFloat(rowLetters.count - 1) * keySpacing
+            // Calculate starting x position for centering
+            let startXOffset = (view.frame.width - totalLetterWidth) / 2
+
 
             for (colIndex, letter) in rowLetters.enumerated() {
                 let keyButton = UIButton(type: .system)
@@ -86,7 +97,7 @@ class KeyboardViewController: UIInputViewController {
                 keyButton.backgroundColor = .white
                 keyButton.layer.cornerRadius = 5
 
-                let startX = keySpacing + CGFloat(colIndex) * (keyWidth + keySpacing)
+                let startX = startXOffset + CGFloat(colIndex) * (keyWidth + keySpacing)
                 keyButton.frame = CGRect(x: startX, y: startY, width: keyWidth, height: keyHeight)
                 keyButton.addTarget(self, action: #selector(keyTapped), for: .touchUpInside)
 
@@ -95,19 +106,40 @@ class KeyboardViewController: UIInputViewController {
 
             // Add backspace and space keys
             if rowIndex == 2 {
-                let backspaceButton = createSpecialKey(title: "⌫", startX: view.frame.width - keyWidth - keySpacing, startY: startY, width: keyWidth, height: keyHeight)
-                view.addSubview(backspaceButton)
-            } else if rowIndex == 3 {
-                let spaceButtonWidth = availableWidth / 2
-                let spaceButtonStartX = (view.frame.width - spaceButtonWidth) / 2
-                let spaceButton = createSpecialKey(title: "space", startX: spaceButtonStartX, startY: startY, width: spaceButtonWidth, height: keyHeight)
-                view.addSubview(spaceButton)
+                // Uppercase/lowercase toggle button (on the left)
+                           let toggleCaseButton = createSpecialKey(title: isLowercase ? "⇧" : "⇩",
+                                                                   startX: keySpacing,
+                                                                   startY: startY,
+                                                                   width: keyWidth, height: keyHeight)
+                           toggleCaseButton.addTarget(self, action: #selector(toggleCase), for: .touchUpInside)
+                           view.addSubview(toggleCaseButton)
 
-                // Add lowercase/uppercase toggle button
-                let toggleButton = createSpecialKey(title: "⇧", startX: keySpacing, startY: startY, width: keyWidth, height: keyHeight)
-                toggleButton.addTarget(self, action: #selector(toggleCase), for: .touchUpInside)
-                view.addSubview(toggleButton)
-            }
+                           // Backspace button (on the right)
+                           let backspaceButton = createSpecialKey(title: "⌫",
+                                                                   startX: view.frame.width - keyWidth - keySpacing,
+                                                                   startY: startY,
+                                                                   width: keyWidth, height: keyHeight)
+                           view.addSubview(backspaceButton)
+                
+            } else if rowIndex == 3 {
+                // Symbols/letters toggle button (on the left)
+                           let toggleKeyboardButton = createSpecialKey(title: isSymbolsKeyboardActive ? "ABC" : "123",
+                                                                       startX: keySpacing,
+                                                                       startY: startY,
+                                                                       width: keyWidth, height: keyHeight)
+                           toggleKeyboardButton.addTarget(self, action: #selector(toggleKeyboard), for: .touchUpInside)
+                           view.addSubview(toggleKeyboardButton)
+
+                           // Space button (adjust width and position)
+                // Space button (centered)
+                    let spaceButtonWidth = availableWidth - 2 * keyWidth - 3 * keySpacing
+                    let spaceButtonStartX = (view.frame.width - spaceButtonWidth) / 2
+                    let spaceButton = createSpecialKey(title: "space",
+                                                        startX: spaceButtonStartX,
+                                                        startY: startY,
+                                                        width: spaceButtonWidth, height: keyHeight)
+                    view.addSubview(spaceButton)
+               }
         }
     }
 
@@ -157,17 +189,36 @@ class KeyboardViewController: UIInputViewController {
             }
         }
     }
+    @objc func showSymbols(_ sender: UIButton) {
+        isSymbolsKeyboardActive = true
+        viewDidLayoutSubviews()
+    }
+    @objc func toggleKeyboard(_ sender: UIButton) {
+        isSymbolsKeyboardActive = !isSymbolsKeyboardActive
+        viewDidLayoutSubviews() // Update keyboard display
+
+        // Clear any existing text in the suggestion bar
+        suggestionLabel.text = "Type here..."
+
+        // Update the button title to reflect the new state
+        sender.setTitle(isSymbolsKeyboardActive ? "ABC" : "123", for: .normal)
+
+        // Prevent text insertion by clearing the title for both highlighted and selected states
+        sender.setTitle("", for: .highlighted)
+        sender.setTitle("", for: .selected)
+    }
 
     @objc func keyTapped(_ sender: UIButton) {
-        guard let title = sender.title(for: .normal) else { return }
+        guard let title = sender.title(for: .normal),
+                  title != "⇧" && title != "⇩" && title != "ABC" && title != "123" else { return }
 
         if title == "⌫" {
             textDocumentProxy.deleteBackward()
         } else if title == "space" {
             textDocumentProxy.insertText(" ")
         } else {
-            let textToInsert = isLowercase ? title.lowercased() : title.uppercased()
-            textDocumentProxy.insertText(textToInsert)
+            let textToInsert = isSymbolsKeyboardActive ? title : (isLowercase ? title.lowercased() : title.uppercased())
+                   textDocumentProxy.insertText(textToInsert)
         }
 
         if let currentText = textDocumentProxy.documentContextBeforeInput {
@@ -198,11 +249,15 @@ class KeyboardViewController: UIInputViewController {
     @objc func toggleCase(_ sender: UIButton) {
         isLowercase = !isLowercase
 
-        // Update button title to reflect current case
+        // Update button title
         sender.setTitle(isLowercase ? "⇧" : "⇩", for: .normal)
 
-        // Update keyboard layout to reflect current case
-        viewDidLayoutSubviews() // Call this to redraw the keyboard with updated case
+        // Update letter button titles
+        for subview in view.subviews {
+            if let button = subview as? UIButton, let title = button.title(for: .normal), title.count == 1 {
+                button.setTitle(isLowercase ? title.lowercased() : title.uppercased(), for: .normal)
+            }
+        }
     }
 
     func matchesRegex(_ regex: String, in text: String) -> Bool {
@@ -216,15 +271,22 @@ class KeyboardViewController: UIInputViewController {
             return false
         }
     }
+    @objc func suggestionTapped(_ gesture: UITapGestureRecognizer) {
+        if let text = suggestionLabel.text {
+            let words = text.components(separatedBy: ", ")
+            if let tappedWord = words.first { // Assuming you want to insert the first suggestion
+                textDocumentProxy.insertText(tappedWord)
+            }
+        }
+    }
 
     func predictWords(for input: String) -> [String] {
         guard let wordList = wordList else { return [] }
 
-        // Filter the word list based on the input (e.g., starts with, contains)
+        // Filter based on input
         let filteredWords = wordList.filter { $0.hasPrefix(input) }
 
-        // You can further refine the suggestions based on word frequency, context, etc.
-
-        return filteredWords
+        // Return first 3 suggestions
+        return Array(filteredWords.prefix(3))
     }
 }
