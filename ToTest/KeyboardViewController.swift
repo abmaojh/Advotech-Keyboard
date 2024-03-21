@@ -1,4 +1,8 @@
-import UIKit
+import Foundation
+import SwiftUI
+import Firebase
+import FirebaseAuth
+import FirebaseFirestore
 
 class KeyboardViewController: UIInputViewController {
 
@@ -12,9 +16,9 @@ class KeyboardViewController: UIInputViewController {
         super.updateViewConstraints()
         // Add custom view sizing constraints here
     }
-    let symbolsKeyboardLayout = ["!@#$%^&*()",
+    let symbolsKeyboardLayout = ["1234567890",
+                                 "!@#$%^&*()",
                                  "+-=_\\|/?",
-                                 "~`[]{}<>",
                                  ".:;'\"/"]
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -33,9 +37,12 @@ class KeyboardViewController: UIInputViewController {
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(suggestionTapped))
         suggestionLabel.isUserInteractionEnabled = true
         suggestionLabel.addGestureRecognizer(tapGesture)
+        
+        let sharedDefaults = UserDefaults(suiteName: "group.KeyboardAdvotech")
+        let userName = sharedDefaults?.string(forKey: "userName") ?? ""
         // Keyboard name label
         let label = UILabel()
-        label.text = "Advotech Keyboard"
+        label.text = "Welcome \(userName)"
         label.textAlignment = .center
         label.font = .systemFont(ofSize: 20)
         label.frame = CGRect(x: 0, y: 0, width: 200, height: 50)
@@ -187,6 +194,36 @@ class KeyboardViewController: UIInputViewController {
             } else {
                 suggestionLabel.text = suggestions.joined(separator: ", ")
             }
+
+            // Regex for detecting sensitive information
+            let ssnRegex = "(?:\\d{3}-\\d{2}-\\d{4}|\\d{9})"
+            let creditCardRegex = "\\b(?:\\d{4}[ -]?){3,4}\\d{4,7}\\b"
+            let combinedRegex = "\(ssnRegex)|\(creditCardRegex)"
+
+            if matchesRegex(combinedRegex, in: currentText) {
+                suggestionLabel.text = "Sensitive text detected!"
+
+                if let userId = getCurrentUserId() {
+                    print("Sensitive information detected for user ID: \(userId)")
+
+                    // Retrieve caretaker ID (assuming it's stored in shared preferences)
+                    let sharedDefaults = UserDefaults(suiteName: "group.KeyboardAdvotech")
+                    let caretakerID = sharedDefaults?.string(forKey: "caretakerID")
+
+                    // Send notification if caretaker ID is available
+                    if let caretakerID = caretakerID {
+                        sendNotification(to: caretakerID)
+                    }
+                }
+            } else {
+                // Update suggestions after key press
+                let suggestions = predictWords(for: currentText)
+                if suggestions.isEmpty {
+                    suggestionLabel.text = "Type here..."
+                } else {
+                    suggestionLabel.text = suggestions.joined(separator: ", ")
+                }
+            }
         }
     }
     @objc func showSymbols(_ sender: UIButton) {
@@ -290,3 +327,16 @@ class KeyboardViewController: UIInputViewController {
         return Array(filteredWords.prefix(3))
     }
 }
+func sendNotification(to caretakerID: String) {
+    guard let userID = Auth.auth().currentUser?.uid else { return }
+    let db = Firestore.firestore()
+    let notification = ["fromUserID": userID, "message": "Sensitive information may have been shared", "timestamp": FieldValue.serverTimestamp()] as [String : Any]
+    db.collection("notifications").document(caretakerID).collection("userNotifications").addDocument(data: notification) { error in
+        if let error = error {
+            print("Error sending notification: \(error.localizedDescription)")
+        } else {
+            print("Notification sent successfully")
+        }
+    }
+}
+

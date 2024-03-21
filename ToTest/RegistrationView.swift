@@ -1,10 +1,3 @@
-//
-//  AccountView.swift
-//  Advotech Keyboard
-//
-//  Created by Alhammadi, Abdulrahman (UMKC-Student) on 2/14/24.
-//
-
 import SwiftUI
 import Firebase
 import FirebaseCore // Used for Firebase initialization
@@ -17,11 +10,12 @@ struct RegistrationView: View {
     @State private var confirmPassword = ""
     @State private var name = ""
     @State private var phoneNumber = ""
-    @State private var selectedUserType = UserType.user  // Default
-    @State private var caretakerID = ""  // For users only
+    @State private var selectedUserType = UserType.user // Default
+    @State private var caretakerID = "" // For users only
     @State private var showLoading = false
     @State private var showError = false
     @State private var errorMessage = ""
+    @State private var showSuccessMessage = false // New state for success message
 
     enum UserType: String, CaseIterable, Identifiable {
         case user = "User"
@@ -30,57 +24,81 @@ struct RegistrationView: View {
     }
 
     var body: some View {
-        VStack {
-            Text("Create an Account")
-                .font(.title)
+          VStack {
+              Text("Create an Account")
+                  .font(.title)
 
-            TextField("Email", text: $email)
-                .padding()
+              // Group 1: Email and password fields
+              Group {
+                  TextField("Email", text: $email)
+                      .padding()
 
-            SecureField("Password", text: $password)
-                .padding()
-                .accessibilityIdentifier("passwordField")
+                  SecureField("Password", text: $password)
+                      .padding()
+                      .accessibilityIdentifier("passwordField")
 
-            SecureField("Confirm Password", text: $confirmPassword)
-                .padding()
-                .accessibilityIdentifier("confirmPasswordField")
+                  SecureField("Confirm Password", text: $confirmPassword)
+                      .padding()
+                      .accessibilityIdentifier("confirmPasswordField")
+              }
 
-            TextField("Name", text: $name)
-                .padding()
-            
-            TextField("Phone Number", text: $phoneNumber)
-                .padding()
-                .keyboardType(.phonePad) // Enforce phone number keyboard
+              // Group 2: Name and phone number fields
+              Group {
+                  TextField("Name", text: $name)
+                      .padding()
 
-            Picker("User Type", selection: $selectedUserType) {
-                ForEach(UserType.allCases) { type in
-                    Text(type.rawValue).tag(type)
-                }
-            }
-            .pickerStyle(SegmentedPickerStyle())
-            .padding()
+                  TextField("Phone Number", text: $phoneNumber)
+                      .padding()
+                      .keyboardType(.phonePad)
+              }
 
-            if selectedUserType == .user {
-                TextField("Caretaker ID", text: $caretakerID)
-                    .padding()
-            }
+              // Group 3: User type picker and caretaker ID field
+              Group {
+                  Picker("User Type", selection: $selectedUserType) {
+                      ForEach(UserType.allCases, id: \.rawValue) { type in
+                          Text(type.rawValue).tag(type)
+                      }
+                  }
+                  .pickerStyle(SegmentedPickerStyle())
+                  .padding()
 
-            Button("Register") {
-                showLoading = true
-                registerUser()
-            }
-            .padding()
+                  if selectedUserType == .user {
+                      TextField("Caretaker ID", text: $caretakerID)
+                          .padding()
+                  }
+              }
 
-            if showLoading {
-                ProgressView()
-            }
+              // Group 4: Register button and status messages
+              Group {
+                  Button("Register") {
+                      if !isPasswordValid(password) {
+                          errorMessage = "Password must be at least 10 characters, contain uppercase and lowercase letters, and include numbers or symbols."
+                          showError = true
+                          return
+                      }
 
-            /*if showError {
-                Text("Error: \(errorMessage)")
-            }*/
-        }
-        .padding()
-    }
+                      showLoading = true
+                      registerUser()
+                  }
+                  .padding()
+
+                  if showLoading {
+                      ProgressView()
+                  }
+
+                  if showError {
+                      Text("Error: \(errorMessage)")
+                          .foregroundColor(.red)
+                  }
+
+                  if showSuccessMessage {
+                      Text("Account Registered Successfully!")
+                          .foregroundColor(.green)
+                  }
+              }
+          }
+          .padding()
+      }
 
     func registerUser() {
         guard password == confirmPassword else {
@@ -96,6 +114,7 @@ struct RegistrationView: View {
                 showError = true
             } else {
                 createFirestoreUser() // Successful authentication
+                showSuccessMessage = true // Show success message
             }
             showLoading = false
         }
@@ -128,4 +147,8 @@ struct RegistrationView: View {
         }
     }
 
+    func isPasswordValid(_ password: String) -> Bool {
+        let passwordRegex = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[\\W_])[A-Za-z\\d\\W_]{10,}$"
+        return NSPredicate(format: "SELF MATCHES %@", passwordRegex).evaluate(with: password)
+    }
 }
