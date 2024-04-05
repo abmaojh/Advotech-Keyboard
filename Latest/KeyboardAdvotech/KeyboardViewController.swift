@@ -26,7 +26,7 @@ class KeyboardViewController: UIInputViewController {
 
         suggestionLabel = UILabel(frame: suggestionBar.bounds)
         suggestionLabel.textAlignment = .center
-        suggestionLabel.text = "Type here..."
+        suggestionLabel.text = ""
         suggestionBar.addSubview(suggestionLabel)
 
         // Add tap gesture to suggestionLabel
@@ -37,12 +37,12 @@ class KeyboardViewController: UIInputViewController {
         let sharedDefaults = UserDefaults(suiteName: "group.KeyboardAdvotech")
         let userName = sharedDefaults?.string(forKey: "userName") ?? ""
         // Keyboard name label
-        let label = UILabel()
-        label.text = "Welcome \(userName)"
-        label.textAlignment = .center
-        label.font = .systemFont(ofSize: 20)
-        label.frame = CGRect(x: 0, y: 0, width: 200, height: 50)
-        view.addSubview(label)
+       // let label = UILabel()
+       // label.text = "Welcome \(userName)"
+       // label.textAlignment = .center
+       // label.font = .systemFont(ofSize: 20)
+        //label.frame = CGRect(x: 0, y: 0, width: 200, height: 50)
+        //view.addSubview(label)
 
         // Keyboard background
         view.backgroundColor = .lightGray
@@ -186,7 +186,7 @@ class KeyboardViewController: UIInputViewController {
         if let currentText = textDocumentProxy.documentContextBeforeInput {
             let suggestions = predictWords(for: currentText)
             if suggestions.isEmpty {
-                suggestionLabel.text = "Type here..."
+                suggestionLabel.text = ""
             } else {
                 suggestionLabel.text = suggestions.joined(separator: ", ")
             }
@@ -201,7 +201,7 @@ class KeyboardViewController: UIInputViewController {
         viewDidLayoutSubviews() // Update keyboard display
 
         // Clear any existing text in the suggestion bar
-        suggestionLabel.text = "Type here..."
+        suggestionLabel.text = ""
 
         // Update the button title to reflect the new state
         sender.setTitle(isSymbolsKeyboardActive ? "ABC" : "123", for: .normal)
@@ -241,7 +241,7 @@ class KeyboardViewController: UIInputViewController {
                 // Update suggestions after key press
                 let suggestions = predictWords(for: currentText)
                 if suggestions.isEmpty {
-                    suggestionLabel.text = "Type here..."
+                    suggestionLabel.text = ""
                 } else {
                     suggestionLabel.text = suggestions.joined(separator: ", ")
                 }
@@ -303,9 +303,22 @@ class KeyboardViewController: UIInputViewController {
 
     func predictWords(for input: String) -> [String] {
         guard let wordList = wordList else { return [] }
-        // Filter based on input
-        let filteredWords = wordList.filter { $0.hasPrefix(input) }
-        // Return first 3 suggestions
-        return Array(filteredWords.prefix(3))
+
+        // 1. Filter words starting with the input (case-insensitive)
+        let filteredWords = wordList.filter {
+            $0.lowercased().hasPrefix(input.lowercased())
+        }
+
+        // 2. Sort filtered words based on their position in the original list
+        let sortedWords = filteredWords.sorted { (word1, word2) -> Bool in
+            guard let index1 = wordList.firstIndex(of: word1),
+                  let index2 = wordList.firstIndex(of: word2) else {
+                return false // Handle cases where words are not found
+            }
+            return index1 < index2
+        }
+
+        // 3. Return the first 3 suggestions
+        return Array(sortedWords.prefix(3))
     }
 }
