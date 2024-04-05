@@ -12,9 +12,9 @@ class KeyboardViewController: UIInputViewController {
         super.updateViewConstraints()
         // Add custom view sizing constraints here
     }
-    let symbolsKeyboardLayout = ["!@#$%^&*()",
+    let symbolsKeyboardLayout = ["1234567890",
+                                 "!@#$%^&*()",
                                  "+-=_\\|/?",
-                                 "~`[]{}<>",
                                  ".:;'\"/"]
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -33,9 +33,12 @@ class KeyboardViewController: UIInputViewController {
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(suggestionTapped))
         suggestionLabel.isUserInteractionEnabled = true
         suggestionLabel.addGestureRecognizer(tapGesture)
+        
+        let sharedDefaults = UserDefaults(suiteName: "group.KeyboardAdvotech")
+        let userName = sharedDefaults?.string(forKey: "userName") ?? ""
         // Keyboard name label
         let label = UILabel()
-        label.text = "Advotech Keyboard"
+        label.text = "Welcome \(userName)"
         label.textAlignment = .center
         label.font = .systemFont(ofSize: 20)
         label.frame = CGRect(x: 0, y: 0, width: 200, height: 50)
@@ -272,20 +275,36 @@ class KeyboardViewController: UIInputViewController {
         }
     }
     @objc func suggestionTapped(_ gesture: UITapGestureRecognizer) {
-        if let text = suggestionLabel.text {
-            let words = text.components(separatedBy: ", ")
-            if let tappedWord = words.first { // Assuming you want to insert the first suggestion
-                textDocumentProxy.insertText(tappedWord)
+        guard let suggestionLabel = gesture.view as? UILabel,
+              let suggestionText = suggestionLabel.text else { return }
+
+        let words = suggestionText.components(separatedBy: ", ")
+        let tapLocation = gesture.location(in: suggestionLabel)
+
+        for (index, word) in words.enumerated() {
+            let wordSize = (word as NSString).size(withAttributes: [.font: suggestionLabel.font])
+            let wordRect = CGRect(x: suggestionLabel.textRect(forBounds: suggestionLabel.bounds, limitedToNumberOfLines: 1).origin.x + CGFloat(index) * (wordSize.width + 2 /* Increased spacing */),
+                                  y: 0,
+                                  width: wordSize.width,
+                                  height: wordSize.height)
+            
+            if wordRect.contains(tapLocation) {
+                // Delete existing text before inserting the suggestion
+                if let currentText = textDocumentProxy.documentContextBeforeInput {
+                    for _ in 0..<currentText.count {
+                        textDocumentProxy.deleteBackward()
+                    }
+                }
+                textDocumentProxy.insertText(word)
+                break // Word found, stop iterating
             }
         }
     }
 
     func predictWords(for input: String) -> [String] {
         guard let wordList = wordList else { return [] }
-
         // Filter based on input
         let filteredWords = wordList.filter { $0.hasPrefix(input) }
-
         // Return first 3 suggestions
         return Array(filteredWords.prefix(3))
     }
