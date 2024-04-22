@@ -26,7 +26,6 @@ struct LoginView: View {
         let userType: String
         let caretakerID: String? // Optional, only for users who are not caretakers
     }
-    
     var body: some View {
         NavigationView {
             VStack {
@@ -87,12 +86,14 @@ struct LoginView: View {
                 }
             }
             .padding()
-        }
-        .onAppear {
-            // Check if user is already logged in
-            if Auth.auth().currentUser != nil {
-                fetchUserData()
-            }
+            //.navigationBarBackButtonHidden(true) // Add this line
+                       //.toolbar { // Add this block of code
+                          // ToolbarItem(placement: .navigationBarLeading) {
+                             //  Button("Back") {
+                               //    navigationController?.popViewController(animated: true)
+                              // }
+                          // }
+                      // }
         }
     }
 
@@ -105,18 +106,10 @@ struct LoginView: View {
             } else {
                 print("Login Successful!")
                 isLoggedIn = true
-
-                // Store caretaker ID (if applicable)
-                if let userData = result?.user, userData.userType != "Caretaker" {
-                    let sharedDefaults = UserDefaults(suiteName: "group.KeyboardAdvotech")
-                    sharedDefaults?.set(userData.caretakerID, forKey: "caretakerID")
-                }
-
                 fetchUserData()
             }
         }
     }
-    
     func fetchUserData() {
         guard let userID = Auth.auth().currentUser?.uid else { return }
         let db = Firestore.firestore()
@@ -132,12 +125,16 @@ struct LoginView: View {
                     userType: data["userType"] as? String ?? "",
                     caretakerID: data["caretakerID"] as? String
                 )
+                // Store caretaker ID in shared defaults
+                if let userData = userData {
+                               let sharedDefaults = UserDefaults(suiteName: "group.KeyboardAdvotech")
+                               sharedDefaults?.set(userData.caretakerID, forKey: "caretakerID")
+                           }
             } else {
                 // Handle case: document doesn't exist
             }
         }
     }
-    
     func sendNotification(to caretakerID: String) {
         guard let userID = Auth.auth().currentUser?.uid else { return }
         let db = Firestore.firestore()
