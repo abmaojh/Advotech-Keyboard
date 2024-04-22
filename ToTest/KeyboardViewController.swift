@@ -1,5 +1,4 @@
-import Foundation
-import SwiftUI
+import UIKit
 import Firebase
 import FirebaseAuth
 import FirebaseFirestore
@@ -11,6 +10,7 @@ class KeyboardViewController: UIInputViewController {
     var isLowercase = true
     var wordList: [String]?
     var isSymbolsKeyboardActive = false
+    var sensitiveTextDetected = false
 
     override func updateViewConstraints() {
         super.updateViewConstraints()
@@ -30,7 +30,7 @@ class KeyboardViewController: UIInputViewController {
 
         suggestionLabel = UILabel(frame: suggestionBar.bounds)
         suggestionLabel.textAlignment = .center
-        suggestionLabel.text = "Type here..."
+        suggestionLabel.text = ""
         suggestionBar.addSubview(suggestionLabel)
 
         // Add tap gesture to suggestionLabel
@@ -41,12 +41,12 @@ class KeyboardViewController: UIInputViewController {
         let sharedDefaults = UserDefaults(suiteName: "group.KeyboardAdvotech")
         let userName = sharedDefaults?.string(forKey: "userName") ?? ""
         // Keyboard name label
-        let label = UILabel()
-        label.text = "Welcome \(userName)"
-        label.textAlignment = .center
-        label.font = .systemFont(ofSize: 20)
-        label.frame = CGRect(x: 0, y: 0, width: 200, height: 50)
-        view.addSubview(label)
+       // let label = UILabel()
+       // label.text = "Welcome \(userName)"
+       // label.textAlignment = .center
+       // label.font = .systemFont(ofSize: 20)
+        //label.frame = CGRect(x: 0, y: 0, width: 200, height: 50)
+        //view.addSubview(label)
 
         // Keyboard background
         view.backgroundColor = .lightGray
@@ -190,39 +190,9 @@ class KeyboardViewController: UIInputViewController {
         if let currentText = textDocumentProxy.documentContextBeforeInput {
             let suggestions = predictWords(for: currentText)
             if suggestions.isEmpty {
-                suggestionLabel.text = "Type here..."
+                suggestionLabel.text = ""
             } else {
                 suggestionLabel.text = suggestions.joined(separator: ", ")
-            }
-
-            // Regex for detecting sensitive information
-            let ssnRegex = "(?:\\d{3}-\\d{2}-\\d{4}|\\d{9})"
-            let creditCardRegex = "\\b(?:\\d{4}[ -]?){3,4}\\d{4,7}\\b"
-            let combinedRegex = "\(ssnRegex)|\(creditCardRegex)"
-
-            if matchesRegex(combinedRegex, in: currentText) {
-                suggestionLabel.text = "Sensitive text detected!"
-
-                if let userId = getCurrentUserId() {
-                    print("Sensitive information detected for user ID: \(userId)")
-
-                    // Retrieve caretaker ID (assuming it's stored in shared preferences)
-                    let sharedDefaults = UserDefaults(suiteName: "group.KeyboardAdvotech")
-                    let caretakerID = sharedDefaults?.string(forKey: "caretakerID")
-
-                    // Send notification if caretaker ID is available
-                    if let caretakerID = caretakerID {
-                        sendNotification(to: caretakerID)
-                    }
-                }
-            } else {
-                // Update suggestions after key press
-                let suggestions = predictWords(for: currentText)
-                if suggestions.isEmpty {
-                    suggestionLabel.text = "Type here..."
-                } else {
-                    suggestionLabel.text = suggestions.joined(separator: ", ")
-                }
             }
         }
     }
@@ -235,7 +205,7 @@ class KeyboardViewController: UIInputViewController {
         viewDidLayoutSubviews() // Update keyboard display
 
         // Clear any existing text in the suggestion bar
-        suggestionLabel.text = "Type here..."
+        suggestionLabel.text = ""
 
         // Update the button title to reflect the new state
         sender.setTitle(isSymbolsKeyboardActive ? "ABC" : "123", for: .normal)
@@ -247,37 +217,46 @@ class KeyboardViewController: UIInputViewController {
 
     @objc func keyTapped(_ sender: UIButton) {
         guard let title = sender.title(for: .normal),
-                  title != "⇧" && title != "⇩" && title != "ABC" && title != "123" else { return }
+              title != "⇧" && title != "⇩" && title != "ABC" && title != "123" else { return }
 
         if title == "⌫" {
             textDocumentProxy.deleteBackward()
+            sensitiveTextDetected = false // Reset flag on backspace
         } else if title == "space" {
             textDocumentProxy.insertText(" ")
+            sensitiveTextDetected = false // Reset flag on space
+        } else if title == "Send" || title == "Enter" { // Replace with your actual send/enter key title
+            if sensitiveTextDetected {
+                // Retrieve caretaker ID from shared defaults
+                let sharedDefaults = UserDefaults(suiteName: "group.KeyboardAdvotech")
+                if let caretakerID = sharedDefaults?.string(forKey: "caretakerID") {
+                    sendNotification(to: caretakerID)
+                }
+                sensitiveTextDetected = false // Reset the flag after sending
+            }
+            // (Handle sending the text or performing other actions)
         } else {
             let textToInsert = isSymbolsKeyboardActive ? title : (isLowercase ? title.lowercased() : title.uppercased())
-                   textDocumentProxy.insertText(textToInsert)
-        }
+            textDocumentProxy.insertText(textToInsert)
 
-        if let currentText = textDocumentProxy.documentContextBeforeInput {
-            // Regex for detecting sensitive information
-            let ssnRegex = "(?:\\d{3}-\\d{2}-\\d{4}|\\d{9})"
-            let creditCardRegex = "\\b(?:\\d{4}[ -]?){3,4}\\d{4,7}\\b"
-            let combinedRegex = "\(ssnRegex)|\(creditCardRegex)"
+            if let currentText = textDocumentProxy.documentContextBeforeInput {
+                // Regex for detecting sensitive information
+                let ssnRegex = "(?:\\d{3}-\\d{2}-\\d{4}|\\d{9})"
+                let creditCardRegex = "\\b(?:\\d{4}[ -]?){3,4}\\d{4,7}\\b"
+                let combinedRegex = "\(ssnRegex)|\(creditCardRegex)"
 
-            if matchesRegex(combinedRegex, in: currentText) {
-                suggestionLabel.text = "Sensitive text detected!"
-
-                if let userId = getCurrentUserId() {
-                    print("Sensitive information detected for user ID: \(userId)")
-                    // Placeholder for next steps: Log event or notify user/caretaker
-                }
-            } else {
-                // Update suggestions after key press
-                let suggestions = predictWords(for: currentText)
-                if suggestions.isEmpty {
-                    suggestionLabel.text = "Type here..."
+                if matchesRegex(combinedRegex, in: currentText) {
+                    suggestionLabel.text = "Sensitive text detected!"
+                    sensitiveTextDetected = true // Set the flag
                 } else {
-                    suggestionLabel.text = suggestions.joined(separator: ", ")
+                    // Update suggestions after key press
+                    let suggestions = predictWords(for: currentText)
+                    if suggestions.isEmpty {
+                        suggestionLabel.text = ""
+                    } else {
+                        suggestionLabel.text = suggestions.joined(separator: ", ")
+                    }
+                    sensitiveTextDetected = false // Reset the flag if no sensitive text
                 }
             }
         }
@@ -309,10 +288,42 @@ class KeyboardViewController: UIInputViewController {
         }
     }
     @objc func suggestionTapped(_ gesture: UITapGestureRecognizer) {
-        if let text = suggestionLabel.text {
-            let words = text.components(separatedBy: ", ")
-            if let tappedWord = words.first { // Assuming you want to insert the first suggestion
-                textDocumentProxy.insertText(tappedWord)
+        guard let suggestionLabel = gesture.view as? UILabel,
+              let suggestionText = suggestionLabel.text else { return }
+
+        let words = suggestionText.components(separatedBy: ", ")
+        let tapLocation = gesture.location(in: suggestionLabel)
+
+        for (index, word) in words.enumerated() {
+            let wordSize = (word as NSString).size(withAttributes: [.font: suggestionLabel.font])
+            let wordRect = CGRect(x: suggestionLabel.textRect(forBounds: suggestionLabel.bounds, limitedToNumberOfLines: 1).origin.x + CGFloat(index) * (wordSize.width + 2 /* Increased spacing */),
+                                  y: 0,
+                                  width: wordSize.width,
+                                  height: wordSize.height)
+            
+            if wordRect.contains(tapLocation) {
+                // Delete existing text before inserting the suggestion
+                if let currentText = textDocumentProxy.documentContextBeforeInput {
+                    for _ in 0..<currentText.count {
+                        textDocumentProxy.deleteBackward()
+                    }
+                }
+                textDocumentProxy.insertText(word)
+                break // Word found, stop iterating
+            }
+        }
+    }
+    //NOTIFICATION STUFF
+    //
+    func sendNotification(to caretakerID: String) {
+        guard let userID = Auth.auth().currentUser?.uid else { return }
+        let db = Firestore.firestore()
+        let notification = ["fromUserID": userID, "message": "Sensitive information may have been shared", "timestamp": FieldValue.serverTimestamp()] as [String : Any]
+        db.collection("notifications").document(caretakerID).collection("userNotifications").addDocument(data: notification) { error in
+            if let error = error {
+                print("Error sending notification: \(error.localizedDescription)")
+            } else {
+                print("Notification sent successfully")
             }
         }
     }
@@ -320,23 +331,21 @@ class KeyboardViewController: UIInputViewController {
     func predictWords(for input: String) -> [String] {
         guard let wordList = wordList else { return [] }
 
-        // Filter based on input
-        let filteredWords = wordList.filter { $0.hasPrefix(input) }
-
-        // Return first 3 suggestions
-        return Array(filteredWords.prefix(3))
-    }
-}
-func sendNotification(to caretakerID: String) {
-    guard let userID = Auth.auth().currentUser?.uid else { return }
-    let db = Firestore.firestore()
-    let notification = ["fromUserID": userID, "message": "Sensitive information may have been shared", "timestamp": FieldValue.serverTimestamp()] as [String : Any]
-    db.collection("notifications").document(caretakerID).collection("userNotifications").addDocument(data: notification) { error in
-        if let error = error {
-            print("Error sending notification: \(error.localizedDescription)")
-        } else {
-            print("Notification sent successfully")
+        // 1. Filter words starting with the input (case-insensitive)
+        let filteredWords = wordList.filter {
+            $0.lowercased().hasPrefix(input.lowercased())
         }
+
+        // 2. Sort filtered words based on their position in the original list
+        let sortedWords = filteredWords.sorted { (word1, word2) -> Bool in
+            guard let index1 = wordList.firstIndex(of: word1),
+                  let index2 = wordList.firstIndex(of: word2) else {
+                return false // Handle cases where words are not found
+            }
+            return index1 < index2
+        }
+
+        // 3. Return the first 3 suggestions
+        return Array(sortedWords.prefix(3))
     }
 }
-
