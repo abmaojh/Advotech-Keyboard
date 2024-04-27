@@ -38,7 +38,7 @@ class KeyboardViewController: UIInputViewController {
         suggestionLabel.isUserInteractionEnabled = true
         suggestionLabel.addGestureRecognizer(tapGesture)
         
-        let sharedDefaults = UserDefaults(suiteName: "group.KeyboardAdvotech")
+        let sharedDefaults = UserDefaults(suiteName: "group.UMKCAdvotech")
         let userName = sharedDefaults?.string(forKey: "userName") ?? ""
         // Keyboard name label
        // let label = UILabel()
@@ -151,7 +151,7 @@ class KeyboardViewController: UIInputViewController {
     }
 
     func getCurrentUserId() -> String? {
-        let sharedDefaults = UserDefaults(suiteName: "group.KeyboardAdvotech")
+        let sharedDefaults = UserDefaults(suiteName: "group.UMKCAdvotech")
         return sharedDefaults?.string(forKey: "userID")
     }
 
@@ -228,7 +228,7 @@ class KeyboardViewController: UIInputViewController {
         } else if title == "Send" || title == "Enter" { // Replace with your actual send/enter key title
             if sensitiveTextDetected {
                 // Retrieve caretaker ID from shared defaults
-                let sharedDefaults = UserDefaults(suiteName: "group.KeyboardAdvotech")
+                let sharedDefaults = UserDefaults(suiteName: "group.UMKCAdvotech")
                 if let caretakerID = sharedDefaults?.string(forKey: "caretakerID") {
                     sendNotification(to: caretakerID)
                 }
