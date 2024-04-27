@@ -127,7 +127,7 @@ struct LoginView: View {
                 )
                 // Store caretaker ID in shared defaults
                 if let userData = userData {
-                               let sharedDefaults = UserDefaults(suiteName: "group.KeyboardAdvotech")
+                               let sharedDefaults = UserDefaults(suiteName: "group.UMKCAdvotech")
                                sharedDefaults?.set(userData.caretakerID, forKey: "caretakerID")
                            }
             } else {
