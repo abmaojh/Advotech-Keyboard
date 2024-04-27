@@ -11,6 +11,7 @@ class KeyboardViewController: UIInputViewController {
     var wordList: [String]?
     var isSymbolsKeyboardActive = false
     var sensitiveTextDetected = false
+    var suggestionLabelHeightConstraint: NSLayoutConstraint!
 
     override func updateViewConstraints() {
         super.updateViewConstraints()
@@ -24,8 +25,11 @@ class KeyboardViewController: UIInputViewController {
         super.viewDidLoad()
 
         // Initialize suggestion bar and label
-        suggestionBar = UIView(frame: CGRect(x: 0, y: 0, width: view.frame.width, height: 30))
+        suggestionBar = UIView(frame: CGRect(x: 0, y: 0, width: view.frame.width, height: 65))
         suggestionBar.backgroundColor = .lightGray
+        suggestionBar.layer.borderWidth = 1 // Set border width
+        suggestionBar.layer.borderColor = UIColor.lightGray.cgColor // Set border color
+        suggestionBar.layer.cornerRadius = 2 // Adjust the corner radius value as desired
         view.addSubview(suggestionBar)
 
         suggestionLabel = UILabel(frame: suggestionBar.bounds)
@@ -37,6 +41,9 @@ class KeyboardViewController: UIInputViewController {
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(suggestionTapped))
         suggestionLabel.isUserInteractionEnabled = true
         suggestionLabel.addGestureRecognizer(tapGesture)
+        
+        suggestionLabelHeightConstraint = suggestionLabel.heightAnchor.constraint(equalToConstant: 0)
+        suggestionLabelHeightConstraint.isActive = true
         
         let sharedDefaults = UserDefaults(suiteName: "group.UMKCAdvotech")
         let userName = sharedDefaults?.string(forKey: "userName") ?? ""
@@ -243,11 +250,17 @@ class KeyboardViewController: UIInputViewController {
                 // Regex for detecting sensitive information
                 let ssnRegex = "(?:\\d{3}-\\d{2}-\\d{4}|\\d{9})"
                 let creditCardRegex = "\\b(?:\\d{4}[ -]?){3,4}\\d{4,7}\\b"
-                let combinedRegex = "\(ssnRegex)|\(creditCardRegex)"
+                let medicareRegex = "\\d[A-Z]\\d{3}-[A-Z]\\d{2}-[A-Z][A-Z]\\d{2}" //for Medicare numbers
+                let combinedRegex = "\(ssnRegex)|\(creditCardRegex)|\(medicareRegex)"
 
                 if matchesRegex(combinedRegex, in: currentText) {
-                    suggestionLabel.text = "Sensitive text detected!"
-                    sensitiveTextDetected = true // Set the flag
+                    suggestionLabel.text = "⚠️ Sensitive text detected!" // Add warning emoji to the text
+                    suggestionLabel.textColor = .red
+                    suggestionLabel.font = UIFont.boldSystemFont(ofSize: 16)
+                    suggestionLabel.backgroundColor = UIColor(red: 1, green: 0.8, blue: 0.8, alpha: 1) // Light red background
+                    sensitiveTextDetected = true
+                    // Update height constraint to make label visible
+                    suggestionLabelHeightConstraint.constant = 65 //adjust height
                 } else {
                     // Update suggestions after key press
                     let suggestions = predictWords(for: currentText)
@@ -257,6 +270,8 @@ class KeyboardViewController: UIInputViewController {
                         suggestionLabel.text = suggestions.joined(separator: ", ")
                     }
                     sensitiveTextDetected = false // Reset the flag if no sensitive text
+                    // Reset height constraint to hide label
+                    suggestionLabelHeightConstraint.constant = 0
                 }
             }
         }
@@ -344,7 +359,6 @@ class KeyboardViewController: UIInputViewController {
             }
             return index1 < index2
         }
-
         // 3. Return the first 3 suggestions
         return Array(sortedWords.prefix(3))
     }
