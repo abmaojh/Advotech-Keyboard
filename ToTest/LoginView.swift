@@ -22,6 +22,7 @@ struct LoginView: View {
     @State private var errorMessage = ""
     @State private var userData: UserData? = nil // Ensure userData is optional
     @State private var caretakerEmail: String?
+    @State private var userID: String?
     
     struct UserData {
         let name: String
@@ -43,10 +44,19 @@ struct LoginView: View {
                         // Logic for showing buttons based on user type
                         Group {
                             if userData.userType == "Caretaker" {
-                                NavigationLink(destination: NotificationsView()) {
-                                    Text("View Notifications")
-                                }
-                                .padding()
+                                        VStack { // Group caretaker ID information
+                                            Text("Use this to connect user account")
+                                            Text("Your Caretaker ID: \(userID ?? "N/A")")
+                                            Button("Copy ID") {
+                                                UIPasteboard.general.string = userID
+                                            }
+                                            .padding()
+                                        }
+
+                                        NavigationLink(destination: NotificationsView()) { // Keep NotificationsView
+                                            Text("View Notifications")
+                                        }
+                                        .padding()
                             } else if let caretakerID = userData.caretakerID {
                                 Button("Notify Caretaker") {
                                     sendNotification(to: caretakerID)
@@ -90,14 +100,6 @@ struct LoginView: View {
                 }
             }
             .padding()
-            //.navigationBarBackButtonHidden(true) // Add this line
-                       //.toolbar { // Add this block of code
-                          // ToolbarItem(placement: .navigationBarLeading) {
-                             //  Button("Back") {
-                               //    navigationController?.popViewController(animated: true)
-                              // }
-                          // }
-                      // }
         }
     }
 
@@ -134,6 +136,7 @@ struct LoginView: View {
                                let sharedDefaults = UserDefaults(suiteName: "group.UMKCAdvotech")
                                sharedDefaults?.set(userData.caretakerID, forKey: "caretakerID")
                            }
+                self.userID = userID
             } else {
                 // Handle case: document doesn't exist
             }
