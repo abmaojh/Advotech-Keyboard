@@ -9,6 +9,9 @@ import SwiftUI
 import Firebase
 import FirebaseAuth
 import FirebaseFirestore
+import SendGrid
+
+let apiKey = "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"
 
 struct LoginView: View {
     @State private var isLoggedIn = false
@@ -18,6 +21,7 @@ struct LoginView: View {
     @State private var showError = false
     @State private var errorMessage = ""
     @State private var userData: UserData? = nil // Ensure userData is optional
+    @State private var caretakerEmail: String?
     
     struct UserData {
         let name: String
@@ -138,13 +142,33 @@ struct LoginView: View {
     func sendNotification(to caretakerID: String) {
         guard let userID = Auth.auth().currentUser?.uid else { return }
         let db = Firestore.firestore()
-        let notification = ["fromUserID": userID, "message": "Sensitive information may have been shared", "timestamp": FieldValue.serverTimestamp()] as [String : Any]
-        db.collection("notifications").document(caretakerID).collection("userNotifications").addDocument(data: notification) { error in
+
+        // 1. Retrieve caretaker's email address
+        db.collection("users").document(caretakerID).getDocument { snapshot, error in
             if let error = error {
-                print("Error sending notification: \(error.localizedDescription)")
-            } else {
-                print("Notification sent successfully")
+                print("Error fetching caretaker data: \(error)")
+                return
             }
+
+            guard let snapshot = snapshot, snapshot.exists,
+                  let caretakerData = snapshot.data(),
+                  let caretakerEmailString = caretakerData["email"] as? String else {
+                print("Error: Caretaker email not found")
+                return
+            }
+
+            // 2. Create Firestore notification
+            let notification = ["fromUserID": userID, "message": "Sensitive information may have been shared", "timestamp": FieldValue.serverTimestamp()] as [String : Any]
+            db.collection("notifications").document(caretakerID).collection("userNotifications").addDocument(data: notification) { error in
+                if let error = error {
+                    print("Error sending notification: \(error.localizedDescription)")
+                } else {
+                    print("Firestore notification sent successfully")
+                }
+            }
+
+            // 3. Send email notification
+            sendEmailNotification(to: caretakerEmailString)
         }
     }
 
@@ -216,6 +240,33 @@ struct NotificationsView: View {
             }
         }
   }
+//EMAIL
+func sendEmailNotification(to emailAddress: String) {
+    
+    let apiKey = "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"
+
+    // 2. Configure SendGrid session
+    let session = Session()
+    session.authentication = Authentication.apiKey(apiKey)
+
+    // 3. Create email content
+    let personalization = Personalization(recipients: emailAddress)
+    let plainTextContent = Content(contentType: .plainText, value: "Please check the app. Sensitive information may have been shared.")
+    let email = Email(
+        personalizations: [personalization],
+        from: "hamani4624@gmail.com", // Replace with your sender email
+        content: [plainTextContent],
+        subject: "Sensitive Information Detected"
+    )
+
+    // 4. Send email
+    do {
+        try session.send(request: email)
+        print("Email sent successfully!")
+    } catch {
+        print("Error sending email: \(error)")
+    }
+}
   // Define your UserNotification model here, making sure it conforms to Identifiable
   struct UserNotification: Identifiable {
       let id: String
