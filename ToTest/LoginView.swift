@@ -243,7 +243,7 @@ struct NotificationsView: View {
 //EMAIL
 func sendEmailNotification(to emailAddress: String) {
     
-    let apiKey = "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"
+    let apiKey = "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"
 
     // 2. Configure SendGrid session
     let session = Session()
