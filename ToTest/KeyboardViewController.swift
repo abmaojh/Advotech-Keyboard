@@ -47,13 +47,6 @@ class KeyboardViewController: UIInputViewController {
         
         let sharedDefaults = UserDefaults(suiteName: "group.UMKCAdvotech")
         let userName = sharedDefaults?.string(forKey: "userName") ?? ""
-        // Keyboard name label
-       // let label = UILabel()
-       // label.text = "Welcome \(userName)"
-       // label.textAlignment = .center
-       // label.font = .systemFont(ofSize: 20)
-        //label.frame = CGRect(x: 0, y: 0, width: 200, height: 50)
-        //view.addSubview(label)
 
         // Keyboard background
         view.backgroundColor = .lightGray
@@ -87,8 +80,8 @@ class KeyboardViewController: UIInputViewController {
 
         let numRows = 4
         let numKeysPerRow = 10
-        let keySpacing: CGFloat = 5
-        let keyHeight: CGFloat = 40
+        let keySpacing: CGFloat = 3
+        let keyHeight: CGFloat = 50
         let totalSpacing = CGFloat(numKeysPerRow + 1) * keySpacing
         let availableWidth = view.frame.width - totalSpacing
         let keyWidth = availableWidth / CGFloat(numKeysPerRow)
