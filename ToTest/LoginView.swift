@@ -11,7 +11,7 @@ import FirebaseAuth
 import FirebaseFirestore
 import SendGrid
 
-let apiKey = "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"
+//let apiKey = "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"
 
 struct LoginView: View {
     @State private var isLoggedIn = false
